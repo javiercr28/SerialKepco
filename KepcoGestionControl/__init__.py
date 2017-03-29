@@ -6,7 +6,6 @@
 #Notas          	:
 #==============================================================================
 
-__all__ = ["HarmGen"]
+__all__ = ["KepcoGestionControl"]
 
 from .version import __version__
-from .HarmGen import HarmGen
