@@ -2,67 +2,90 @@
 # -*- coding: utf-8 -*-
 # -*- coding: utf-850 -*-
 
-#Titulo				:serialKepcov3_5.py
+#Titulo				:serialKepco.py
 #Descripción		:Biblioteca para el control de las funciones de las fuentes marca Kepco del SESLab.
 #Autor          	:Javier Campos Rojas
-#Fecha            	:enero-2017
-#Versión         	:3.5
+#Fecha            	:marzo-2017
+#Versión         	:3
 #Notas          	:
 #==============================================================================
 
 import serial
 import numpy as np
 import time
+from HarmGenv3 import *
 
 class Source:
-	def __init__(self, name, port):				#Inicia la biblioteca Source, los parametros del puerto cargan una fuente a la vez
-		k=serial.Serial()						#Crea el puerto
-		k.baudrate=9600;						#define velocidad
-		k.bytesize=serial.EIGHTBITS;			#Define tamaño de palabra
-		k.parity=serial.PARITY_NONE;			#Define paridad
-		k.stopbits=serial.STOPBITS_ONE;			#Define bit de parada
-		k.timeout=0.5;							#tiempo de desconexión
-		k.xonxoff=True;							#XONXOFF encendido
-		k.rtscts=False;							#RTSCTS apagado
-		k.write_timeout=0.5;					#tiempo de escritura
-		k.dsrdtr=False;							#DSRDTR apagado
+	def __init__(self, name, port):
+		k=serial.Serial()						
+		k.baudrate=9600;						
+		k.bytesize=serial.EIGHTBITS;			
+		k.parity=serial.PARITY_NONE;			
+		k.stopbits=serial.STOPBITS_ONE;			
+		k.timeout=0.5;							
+		k.xonxoff=True;							
+		k.rtscts=False;							
+		k.write_timeout=0.5;				
+		k.dsrdtr=False;							
 		k.inter_byte_timeout=None;				
-		k.port=port;							#Puerto donde esta la fuente coenctada
-		self.port=port;							#Permite a las demas funciones accesar al valor de puerto
-		self.k=k;								#Permite a las demas funciones accesar al puerto abierto
-		self.name=name;							#Permite a las demas funciones accesar al nombre de la fuente
+		k.port=port;							
+		self.port=port;							
+		self.k=k;			
+		self.name=name;							
 		#k.open();
 		
-	def connectport(self):						#Función para conectarse al puerto
+	def connectport(self):						
 		try: 									
-			self.k.open()						#Abre el puerto
-			return "Conectado en puerto: " + self.k.port		#Si se conecta, muestra el puerto al cual se conecto
-		except Exception, e:					#En caso que no lo abra muestra error de conexión
+			self.k.open()						
+			return "Conectado en puerto: " + "\n" + self.k.port	
+		except IOError, e:					
 			return ("Error: " + "\n" +  str(e)[0:len(str(e))/2] + "\n" + str(e)[len(str(e))/2:len(str(e))]) 
 			#exit()
 		
-		if self.k.isOpen():						#Si el puerto esta abierto
+		if self.k.isOpen():						
 			try:									
-				self.k.write('*idn?\n')			#escribe comando SCPI 
-			except Exception, e1:				#Si no lo abre, muestra error de conexión
+				self.k.write('*idn?\n');
+				return self.k.readline();			 
+			except IOError, e1:				
 				return ("error de comunicacion: " + "\n" +  str(e)[0:len(str(e1))/2] + "\n" + str(e1)[len(str(e1))/2:len(str(e1))])
-		
 		else:
-			return ("No se pudo abrir puerto serial")	#Si no esta abierto, muestra mensaje
+			try:									
+				ser.inWaiting()						
+				return "Conectado en puerto: " + "\n" + self.k.port				 
+			except IOError, e1:
+				return ("No se pudo abrir puerto serial")
 
-	def WriteTrian(self,voltList,f,n,t2,C): 	#Función para crear una señal Triangular#Recibe: tensiones, periodo de muestreo, frecuencia onda
-		self.voltList=voltList;					
+	def WriteTrian(self,Volt,f,n,C):
+		self.V=Volt;
+		self.C=C;
 		self.f=f
 		self.n=n
-		self.t2=t2
-		self.timeStep=len(self.t)
-		self.k.write('*RST\n');					#Comando para reiniciar fuente e iniciar modo remoto
-		self.k.write('LIST:CLE\n');				#limpiar listas de tensión ingresadas en memoria
-		self.k.write('LIST:VOLT ');				#Enviar lista de valores de tensión
-		step=10;								#Se escribira la lista en 10 sublistas
-		m=len(self.voltList)//step				#Calculos internos 
-		m=m*step								#para creación de listas
-		voltList1=self.voltList[0:m]			#Se crean las listas
+		#self.k.write('*RST\n');			
+		self.k.write('LIST:CLE\n');				
+		self.k.write('LIST:VOLT ');	
+		tsm=0.0002;		#Tiempo de muestreo minimo
+		T=1.0/self.f
+		m=float(int(T/tsm));
+		ts=round(T/m,6);
+		t=np.arange(0,T,ts);
+		m=round(m/2)*2;	
+		funct1=self.V*np.arange(0,1,1/(m/2))
+		funct2=self.V*np.arange(1,0,-1/(m/2))
+		funct=np.concatenate([funct1,funct2])
+		funct=np.round(funct)
+		if len(t) < len(funct):
+			m=len(t);
+			funct=funct[0:m]
+			t=t[0:m]
+		elif len(funct) < len(t):
+			m=len(funct);
+			funct=funct[0:m]
+			t=t[0:m]
+		self.voltList=funct;
+		step=10;				
+		m=len(self.voltList)//step
+		m=m*step
+		voltList1=self.voltList[0:m]			
 		voltList2=self.voltList[m:len(self.voltList)]
 		for j in range(0,step):					
 			self.k.write('LIST:VOLT ');			#Se escribe listas de tensiones y se separan en sublistas
@@ -84,27 +107,139 @@ class Source:
 					self.k.write(self.volt_out);
 					self.k.write('\n');
 		self.k.write('LIST:DWEL ');
-		self.k.write(str(self.t2));
+		self.k.write(str(ts));
 		self.k.write('\n');
 		self.k.write('LIST:COUN ');
 		self.k.write(str(self.n));
 		self.k.write('\n');
-		self.k.write('LIST:VOLT?\n');
-		self.k.readline();
+		#self.k.write('LIST:VOLT?\n');
+		#self.k.readline();
 		self.k.write('OUTP ON\n');
 		self.k.write('CURR ');
 		self.k.write(str(self.C));
 		self.k.write('\n');
 		self.k.write('VOLT:MODE LIST\n');
+		print([ts,1.0/(ts*len(funct))]);
 
-	def WriteVoltSine(self, voltList,f,n,t2,C):
-		self.voltList=voltList;
+	def WriteVoltSine2(self, Volt,f,n,C):
+		self.V=Volt;
+		self.f=f;
+		self.n=n;
+		self.C=C;
+		self.k.flushInput();
+		self.k.write('LIST:CLEAR\n');
+		self.k.write('OUTP OFF\n');
+		self.k.write('*RST\n');
+		self.k.write('LIST:VOLT:APPLY SINE,');
+		self.k.write(str(float(self.f)));
+		self.k.write(',')
+		self.k.write(str(float(self.n)));
+		self.k.write('\n');
+		self.k.write('LIST:COUN ');
+		self.k.write(str(int(self.n)));
+		self.k.write('CURR ');
+		self.k.write(str(self.C));
+		self.k.write('\n');
+		self.k.write('OUTP ON\n');
+		self.k.write('VOLT:MODE LIST\n');
+
+	def WriteVoltSine(self, Volt,f,n,C):
+		self.k.flushInput();
+		self.k.write('*OUTP OFF\n');
+		self.k.write('*RST\n');
+		self.V=Volt;
 		self.f=f
 		self.n=n
-		self.t2=t2
 		self.C=C
+		#self.tsm=tm
+		tsm=0.0002;		#Tiempo de muestreo minimo
+		self.tsm=tsm
+		T=1.0/self.f
+		#ts=self.tsm;
+		m=float(int(T/self.tsm));
+		ts=round(T/m,9);
+		#t=np.arange(0,T,ts);
+		t=np.arange(0,m*ts,ts);
+		funct=self.V*np.sin(2*np.pi*self.f*t)
+		"""		
+		if len(t) < len(funct):
+			m=len(t);
+			funct=funct[0:m]
+			t=t[0:m]
+		elif len(funct) < len(t):
+			m=len(funct);
+			funct=funct[0:m]
+			t=t[0:m]
+		"""
+		voltList=np.round(funct,3)
+		self.voltList=voltList;
+		step=20;
+		m=len(self.voltList)//step
+		m=m*step
+		voltList1=self.voltList[0:m]
+		voltList2=self.voltList[m:len(self.voltList)]
+		self.k.write('FUNC:MODE VOLT\n');
+		self.k.write('LIST:CLEAR\n');
+		#self.stop();
+		for j in range(0,step):
+			self.k.write('LIST:VOLT ');
+			for i in range(j*len(voltList1)/step,(j+1)*len(voltList1)/step):
+				self.volt_out=str(voltList1[i]);
+				if i < ((j+1)*(len(voltList1)-1)/step):
+					self.k.write(self.volt_out);
+					self.k.write(',');
+				else:
+					self.k.write(self.volt_out);
+					self.k.write('\n');
+		self.k.write('LIST:VOLT ');
+		for i in range(0,len(voltList2)):
+				self.volt_out=str(voltList2[i]);
+				if i < len(voltList2):
+					self.k.write(self.volt_out);
+					self.k.write(',');
+				else:
+					self.k.write(self.volt_out);
+					self.k.write('\n');
+		self.k.write('LIST:VOLT:POIN \n');
+		self.k.write('LIST:DWEL ');
+		self.k.write(str(ts));
+		self.k.write('\n');
+		self.k.flushInput();
+		self.k.write('LIST:DWEL?\n');
+		print(self.k.readline());
+		self.k.write('LIST:COUN ');
+		self.k.write(str(int(self.n)));
+		self.k.write('\n');
+		#self.k.write('LIST:VOLT?\n');
+		#self.k.readline();
+		self.k.write('OUTP ON\n');
+		self.k.write('CURR ');
+		self.k.write(str(self.C));
+		self.k.write('\n');
+		self.k.write('VOLT:MODE LIST\n');
+		self.k.flushInput()
+		#plt.plot(t,funct)
+		#plt.show(block=False);
+		print([ts,1.0/(ts*len(funct))]);
+		
+	def WriteHarm(self, Volt,f,n,C,y):
+		self.V=Volt;
+		self.f=f
+		self.n=n
+		self.C=C
+		self.y=y #puede ser lista o un numero entero
 		self.k.write('*RST\n');
+		self.k.write('*CLS\n');
 		self.k.write('LIST:CLE\n');
+		tsm=0.0002;		#Tiempo de muestreo minimo
+		T=1.0/self.f
+		m=float(int(T/tsm));
+		ts=round(T/m,6);
+		t=np.arange(0,T,ts)
+		Harm1=HarmGen(self.V,self.f,self.y);
+		funct=Harm1.Harm()
+		voltList=np.round(funct,3)
+		self.voltList=voltList;
 		step=10;
 		m=len(self.voltList)//step
 		m=m*step
@@ -131,18 +266,20 @@ class Source:
 					self.k.write('\n');
 		self.k.write('LIST:VOLT:POIN \n');
 		self.k.write('LIST:DWEL ');
-		self.k.write(str(self.t2));
+		self.k.write(str(ts));
 		self.k.write('\n');
 		self.k.write('LIST:COUN ');
 		self.k.write(str(self.n));
 		self.k.write('\n');
-		self.k.write('LIST:VOLT?\n');
-		self.k.readline();
+		#self.k.write('LIST:VOLT?\n');
+		#self.k.readline();
 		self.k.write('OUTP ON\n');
 		self.k.write('CURR ');
 		self.k.write(str(self.C));
 		self.k.write('\n');
 		self.k.write('VOLT:MODE LIST\n');
+		self.k.write('*OPC\n');
+		print([ts,1.0/(ts*len(funct))],self.y);
 
 	def WriteVolt(self,voltValue,C):
 		self.voltValue=voltValue;
@@ -155,18 +292,37 @@ class Source:
 		self.k.write('CURR ');
 		self.k.write(str(self.C));
 		self.k.write('\n');
-		self.k.write('MEAS:VOLT?');
+		#self.k.write('MEAS:VOLT?');
+		#self.k.write('\n');
+		
+	def WriteCurr(self,voltValue,C):
+		self.voltValue=voltValue;
+		self.C=C
+		self.k.write('*RST\n');
+		self.k.write('OUTP ON\n');
+		self.k.write('VOLT ');
+		self.k.write(str(self.voltValue));
 		self.k.write('\n');
+		self.k.write('CURR');
+		self.k.write(str(self.C));
+		self.k.write('\n');
+		self.k.write('FUNC MODE CURR\n');
+		self.k.write('FUNC:MODE?\n');
+		state = self.k.readline()
+		return state;
 
 	def identify(self):
+		self.k.flushInput()
 		self.k.write('*idn?\n');
 		name = self.k.readline()
 		return name;
 	
 	def stop(self):
-		self.k.write('*RST\n');
 		self.k.write('LIST:CLE\n');
-		
+		self.k.write('*RST\n');
+		self.k.write('*OUTP OFF\n');
+		self.k.flushInput()
+
 	def measV(self):
 		self.k.write('MEAS:VOLT?\n')
 		
@@ -230,28 +386,3 @@ class Source:
 		status = self.k.readline()
 		return status;
 
-	def connect(self):
-		try: 
-			self.k.open()
-			return "Conectado"
-		except Exception, e:
-			return "error al abrir puerto serial: " + str(e)
-			exit()
-			
-		if self.k.isOpen():
-			try:
-				flushInput()
-				self.k.flushOutput()
-				self.k.write('*idn?\n')
-				time.sleep(0.1)
-				n=0;
-				while True:
-					respuesta = self.k.readline()
-					return("Fuente: "+respuesta)
-
-				self.k.close()
-			except Exception, e1:
-				return "error de comunicacion: " + str(e1)
-		
-		else:
-			return "No se pudo abrir puerto serial"
