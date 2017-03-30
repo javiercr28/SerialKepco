@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # -*- coding: utf-850 -*-
 
-#Titulo				:KpecoGestionControl.py
+#Titulo				:KepcoGestionControl.py
 #Descripción		:Interfaz de usuario y control de fuentes marca Kepco del SESLab.
 #Autor          	:Javier Campos Rojas
 #Fecha            	:Marzo-2017
@@ -12,7 +12,7 @@
 
 from graphics import *
 from button import *
-from serialKepco import *
+from SerialKepco import *
 from HarmGen import *
 import matplotlib.pyplot as plt
 import numpy as np
