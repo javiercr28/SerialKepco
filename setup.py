@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# -*- coding: utf-850 -*-
+
 from __future__ import with_statement
 
 # http://docs.python.org/distutils/

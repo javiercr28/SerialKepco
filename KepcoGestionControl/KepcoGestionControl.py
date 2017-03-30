@@ -433,10 +433,6 @@ def main():
 		if stop2.clicked(pt):
 			kepco2.stop()
 			
-		if caracterizar.clicked(pt):
-			#osc1=getWave()
-			#osc1.OscWave()
-			
 		pt = win.getMouse()
 	win.close()
 main()
