@@ -27,7 +27,7 @@ setup(
     author = 'Javier Campos Rojas',
     author_email = 'nautilus28c@gmail.com	',
     url = 'http://airesolcr.com',
-    download_url = 'https://github.com/javiercr28/SerialKepco/tarball/master',
+    download_url = 'https://github.com/javiercr28/SerialKepco/tree/master/HarmGen',
     keywords = 'USB SCPI Kepco Serial SESLab Source Fuentes',
     license = 'Licencia ITCR',
     classifiers=[
