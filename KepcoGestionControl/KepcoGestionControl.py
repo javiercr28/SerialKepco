@@ -344,14 +344,14 @@ def main():
 			
 		if connects1.clicked(pt):
 			port1=port1_val.getText()
-			kepco1=Source("Fuente1",port1)
+			kepco1=SerialKepco.Source("Fuente1",port1)
 			m1=kepco1.connectport()
 			m2=kepco1.identify()
 			mensaje.setText(m1 + "\n" + m2)
 			
 		if connects2.clicked(pt):
 			port2=port2_val.getText()
-			kepco2=Source("Fuente2",port2)
+			kepco2=SerialKepco.Source("Fuente2",port2)
 			m1=kepco2.connectport()
 			m2=kepco2.identify()
 			mensaje2.setText(m1 + "\n" + m2)
